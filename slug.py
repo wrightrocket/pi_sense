@@ -21,19 +21,23 @@ STOP = 'stop'
 PRESS = 'pressed'
 HELD = 'held'
 
-MSG_END = 'Game Over Slug :D'
-MSG_START = 'Go Slug :)'
-MSG_SCORE = 'You scored:'
-MSG_VEGIES = 'vegies!!!'
-MSG_LIVES = 'You have'
-MSG_LIFE = 'You have 1 life left...'
+MSG_END = 'Game Over :D'
+MSG_START = 'Go!'
+MSG_SCORE = 'Score:'
+MSG_VEGIES = '!!!'
+MSG_LIVES = 'Only'
+MSG_LIFE = 'LAST LIFE LEFT...'
 MSG_LEFT = 'lives left...'
+MSG_WIN = 'Leveling up...'
+MSG_RAT = 'Rats!!!'
+MSG_SPEED = 0.05
 
     
-TIME_SLUG = 1.0
+DELAY = 1.0
 WHITE = (255,255,255)
 BLACK = (0,0,0) 
 RED = (255,0,0)
+YELLOW = (255, 255, 0)
 GREEN = (0,255,0)
 BLUE = (0,0,255)
 CHANCE = 5
@@ -43,6 +47,7 @@ PIXMIN = 0
 VEGMAX = 3
 RATMAX = 3
 LIVES = 3
+VERBOSE = False
 
 def coord(z):
     if z < PIXMIN:
@@ -61,38 +66,48 @@ class Slug():
     def left(self):
         x = coord(self.slug[-1][0] - 1)
         self.slug.append((x, self.slug[-1][1]))
-        # print('left slug', self.slug)
+        if VERBOSE: print('left slug', self.slug)
 
     def right(self):
         x = coord(self.slug[-1][0] + 1)
         self.slug.append((x, self.slug[-1][1]))
-        # print('right slug', self.slug)
+        if VERBOSE: print('right slug', self.slug)
                     
     def up(self):
         y = coord(self.slug[-1][1] - 1)
         self.slug.append((self.slug[-1][0], y))
-        # print('up_slug', self.slug)
+        if VERBOSE: print('up_slug', self.slug)
 
     def down(self):
         y = coord(self.slug[-1][1] + 1)
         self.slug.append((self.slug[-1][0], y))
-        # print('down_slug', self.slug)
-        
+        if VERBOSE: print('down_slug', self.slug)
+
+    def message(self, msg, color=WHITE):
+            self.hat.show_message(msg, MSG_SPEED, color)
+            
     def stop(self):
+        if VERBOSE: print('lives', self.lives)
+        msg =' '.join((MSG_SCORE, str(self.score)))
         if not self.winner:
             self.lives -= 1
-        else:
-            self.winner = False
-        print('lives', self.lives)
+   
+        
         if not self.lives:
-            self.hat.show_message(MSG_END)
+            self.message(msg, YELLOW)
+            self.message(MSG_END, RED)
             exit()
         else:
-            self.hat.show_message(' '.join((MSG_SCORE, str(self.score), MSG_VEGIES)))
-            if self.lives == 1:
-                self.hat.show_message(MSG_LIFE)
+            if self.winner and self.lives > 1:
+                self.message(msg, BLUE)
+            elif not self.winner and self.lives > 1:
+                self.message(msg, GREEN)
             else:
-                self.hat.show_message(' '.join((MSG_LIVES, str(self.lives), MSG_LEFT)))
+                if self.lives == 1:
+                    self.message(MSG_LIFE, YELLOW)
+                else:
+                    msg = ' '.join((MSG_LIVES, str(self.lives), MSG_LEFT))
+                    self.message(msg)
             self.init()
 
     def rodent(self):
@@ -105,11 +120,11 @@ class Slug():
                 self.rats.append(rat)
                 if rat in self.vegies:
                     self.vegies.remove(rat)
-        lucky = random.randint(1,CHANCE * 3)
-        if lucky == WINNER and len(self.rats) > 0:
-            pix = self.rats.pop(0)
-            self.hat.set_pixel(*pix, BLACK)
-        print('rats', self.rats)
+            lucky = random.randint(1,CHANCE * 3)
+            if lucky == WINNER and len(self.rats) > 0:
+                pix = self.rats.pop(0)
+                self.hat.set_pixel(*pix, BLACK)
+        if VERBOSE: print('rats', self.rats)
         
 
     def vegie(self):
@@ -118,17 +133,17 @@ class Slug():
             veg = pixel()
             if (not veg in self.slug) and (not veg in self.vegies):
                 break
-        lucky = random.randint(5,10)
+        lucky = random.randint(1, CHANCE)
         if lucky == WINNER:
             if veg_len < VEGMAX:
                 self.vegies.append(veg)
                 veg_len += 1
-            lucky = random.randint(1,20)
+            lucky = random.randint(1,CHANCE * 2)
             if lucky == WINNER:
                 if 0 < veg_len < VEGMAX:
                     pix = self.vegies.pop(0)
                     self.hat.set_pixel(*pix, BLACK)
-        print('vegies', self.vegies)
+        if VERBOSE: print('vegies', self.vegies)
 
     def slug_grow(self):
         if not self.move:
@@ -156,7 +171,8 @@ class Slug():
                 self.grow = True
             elif pix in self.rats:
                 self.move = STOP
-                print('The rat got the slug')
+                self.message(MSG_RAT, RED)
+                print('RATS!')
                 break
             
             red -= color_delta
@@ -164,12 +180,10 @@ class Slug():
             green -= color_delta
             color = (red, green, blue)
             self.hat.set_pixel(*pix, color)
-              
-
-        print('draw slug', self.slug)
+        if VERBOSE: print('slug', self.slug)
                 
     def hat_action(self, event):
-        print(event)
+        if VERBOSE: print(event)
         if event.action == PRESS:
             self.move = event.direction
         if event.action == HELD:
@@ -177,7 +191,7 @@ class Slug():
           
     def update_loop(self):
         while self.move != STOP:
-            sleep(TIME_SLUG)
+            sleep(DELAY)
             if self.move == RIGHT:
                 self.right()
             elif self.move == LEFT:
@@ -186,10 +200,12 @@ class Slug():
                 self.up()
             elif self.move == DOWN:
                 self.down()
-            print(self.move)
+            if VERBOSE: print(self.move)
             slug_len = len(self.slug) 
             if slug_len > PIXMAX:
                 self.winner = True
+                self.message(MSG_WIN, GREEN)
+                self.delay -= self.delay / LIVES
                 self.move = STOP
             elif slug_len > 0:
                 self.rodent()
@@ -229,7 +245,7 @@ class Slug():
 
     def init_hat(self):
         self.hat = SenseHat()
-        self.hat.show_message(MSG_START)
+        self.message(MSG_START, GREEN)
         self.hat.clear()
         self.hat.stick.direction_any = self.hat_action
         
@@ -245,6 +261,7 @@ class Slug():
         self.update_loop()
     
     def __init__(self):
+        self.delay = DELAY
         self.lives = LIVES
         self.init()
         

@@ -1,3 +1,11 @@
+''' WrightRocket Slug for Raspberry Pi
+    By Keith Wright
+    Created May 11, 2018
+    
+    This project requires the Raspberry Pi Sense Hat available from the
+    same distribution channels as the Pi.
+
+'''
 from sense_hat import SenseHat
 from time import sleep
 import random
@@ -23,20 +31,20 @@ def square():
 ##    green=(0,255,0)
 ##    white=(255,255,255)
     
-    for colors in range(random.randint(1,7)):
-        c = color()
-        for x in range(colors, 8):
-            for y in range(colors, 8):
-                sense.set_pixel(x, y, c)
-            
-##            sense.set_pixel(x, 7-y-x, c)
-##            sense.set_pixel(7-x, y-x, c)
-##            sense.set_pixel(7-x, 7-y-x, c)
-##    sense.set_pixel(0,0,color())
-##    sense.set_pixel(0,7,color())
-##    sense.set_pixel(7,0, color())
-##    sense.set_pixel(7,7,color())
-    #sleep(3)
+    #for pixels in range(random.randint(1,7)):
+    count = 0
+    for pixels in range(8, -1, -1):
+        c = color()  
+        squares = []
+        squares.extend([(x+count,pixels-1) for x in range(pixels-count)]) # bottom
+        squares.extend([(x+count,7-pixels+1) for x in range(pixels-count)]) # top
+        squares.extend([(pixels-1, y+count) for y in range(pixels-count)]) # right
+        squares.extend([(count, y+count) for y in range(pixels-count)]) # 
+        count += 1
+        for pix in squares[::-1]:
+            sleep(0.02)
+            sense.set_pixel(*pix, c)
+
 
 def pixie():
     sense.clear()
@@ -88,7 +96,7 @@ def demo():
     while True:
         fun = random.choice((message, letter, pixie, square))
         fun()
-##        square()
-        sleep(3)
+        #square()
+        sleep(1)
 demo()
 
