@@ -32,7 +32,7 @@ MSG_WIN = 'Leveling up...'
 MSG_RAT = 'Rats!!!'
 MSG_SPEED = 0.05
 
-    
+FRUIT_DELAY = 0.1    
 DELAY = 1.0
 WHITE = (255,255,255)
 BLACK = (0,0,0) 
@@ -44,8 +44,9 @@ CHANCE = 5
 WINNER = random.randint(1, CHANCE)
 PIXMAX = 7
 PIXMIN = 0
-VEGMAX = 3
-RATMAX = 3
+FRUITMAX = 2
+VEGMAX = 4
+RATMAX = 2
 LIVES = 3
 VERBOSE = False
 
@@ -120,19 +121,40 @@ class Slug():
                 self.rats.append(rat)
                 if rat in self.vegies:
                     self.vegies.remove(rat)
+                if rat in self.fruits:
+                    self.fruit.remove(rat)
             lucky = random.randint(1,CHANCE * 3)
             if lucky == WINNER and len(self.rats) > 0:
                 pix = self.rats.pop(0)
                 self.hat.set_pixel(*pix, BLACK)
         if VERBOSE: print('rats', self.rats)
+
+    def fruit(self):
+        fruit_len = len(self.fruits)
+        while True:
+            fruit = pixel()
+            if (not fruit in self.slug) and (not fruit in self.vegies) and (not fruit in self.fruits):
+                    break
+        lucky = random.randint(1, CHANCE)
+        if lucky == WINNER:
+            if fruit_len < FRUITMAX:
+                self.fruits.append(fruit)
+                fruit_len += 1
+            lucky = random.randint(1, CHANCE * 2)
+            if lucky == WINNER:
+                if 0 < fruit_len < FRUITMAX:
+                    pix = self.fruits.pop(0)
+                    self.hat.set_pixel(*pix, BLACK)
+        if VERBOSE: print('fruits', self.fruits)
+
         
 
     def vegie(self):
         veg_len = len(self.vegies)
         while True:
             veg = pixel()
-            if (not veg in self.slug) and (not veg in self.vegies):
-                break
+            if (not veg in self.slug) and (not veg in self.vegies) and (not veg in self.fruits):
+                    break
         lucky = random.randint(1, CHANCE)
         if lucky == WINNER:
             if veg_len < VEGMAX:
@@ -155,10 +177,13 @@ class Slug():
         self.grow = False
         
     def draw(self):
+        ''' updates Sense Hat display '''
         for pix in self.vegies:
             self.hat.set_pixel(*pix, GREEN)
         for pix in self.rats:
             self.hat.set_pixel(*pix, RED)
+        for pix in self.fruits:
+            self.hat.set_pixel(*pix, YELLOW)
         color = WHITE
         blue = 0
         green = 255
@@ -169,10 +194,16 @@ class Slug():
                 self.vegies.remove(pix)
                 self.score += 1
                 self.grow = True
+            elif pix in self.fruits:
+                self.fruits.remove(pix)
+                self.score += 1
+                self.grow = False
+                self.delay -= FRUIT_DELAY
             elif pix in self.rats:
+                self.score -= 1
                 self.move = STOP
                 self.message(MSG_RAT, RED)
-                print('RATS!')
+                if VERBOSE: print('RATS!')
                 break
             
             red -= color_delta
@@ -190,8 +221,9 @@ class Slug():
             self.move = STOP
           
     def update_loop(self):
+        ''' Hotspot function '''
         while self.move != STOP:
-            sleep(DELAY)
+            sleep(self.delay)
             if self.move == RIGHT:
                 self.right()
             elif self.move == LEFT:
@@ -210,6 +242,7 @@ class Slug():
             elif slug_len > 0:
                 self.rodent()
                 self.vegie()
+                self.fruit()
                 self.draw()
                 self.slug_grow()
             else:
@@ -252,8 +285,9 @@ class Slug():
     def init(self):
         self.slug = [pixel()]
         self.vegies = []
+        self.fruits = []
         self.rats = []
-        self.score = 0
+        self.delay = DELAY
         self.grow = False
         self.winner = False
         self.init_slug()
@@ -263,6 +297,8 @@ class Slug():
     def __init__(self):
         self.delay = DELAY
         self.lives = LIVES
+        self.level = 1
+        self.score = 0
         self.init()
         
 
